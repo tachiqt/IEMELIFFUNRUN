@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AGOS Family Run 2026
 
-## Getting Started
+Registration website for AGOS Family Run 2026. Public form has no admin sign-in. Open `/admin` directly.
 
-First, run the development server:
+## Local setup
+
+1. Copy `.env.example` to `.env.local` and fill in values.
+2. In Cloudflare R2, create a bucket matching `R2_BUCKET` (default `agos-2026-proofs`). Add a CORS rule allowing `PUT`, `GET`, and `HEAD` from your Cloud Run origin.
+3. Start Postgres and apply the schema:
 
 ```bash
+docker compose up -d
+npx prisma generate
+npm run db:push
+npm run db:seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Form: http://localhost:3000
+- Admin: http://localhost:3000/admin
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Google Cloud deploy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create Cloud SQL (Postgres 16), Secret Manager secrets for every env var, Artifact Registry, then Cloud Run with the Cloud SQL connection.
 
-## Learn More
+Cloud SQL URL shape:
 
-To learn more about Next.js, take a look at the following resources:
+```
+postgresql://USER:PASSWORD@localhost/agos?host=/cloudsql/PROJECT:REGION:INSTANCE
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Build and deploy with `cloudbuild.yaml`, or:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+gcloud run deploy agos-family-run --source . --region asia-southeast1 --allow-unauthenticated --add-cloudsql-instances PROJECT:REGION:INSTANCE
+```
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Set the same env/secrets used in `.env.example`.

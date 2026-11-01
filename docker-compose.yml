@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: agos
+      POSTGRES_PASSWORD: agos
+      POSTGRES_DB: agos
+    volumes:
+      - agos-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agos -d agos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:8080"
+    env_file:
+      - .env.local
+    environment:
+      DATABASE_URL: postgresql://agos:agos@db:5432/agos
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  agos-pg:

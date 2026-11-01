@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Church {
+  code           String           @id
+  name           String
+  zone           Int?
+  estimatedQuota Int              @default(0) @map("estimated_quota")
+  slotStart      Int              @map("slot_start")
+  sortOrder      Int              @map("sort_order")
+  registrations  Registration[]
+  counter        ChurchCounter?
+
+  @@map("churches")
+}
+
+model ChurchCounter {
+  churchCode   String @id @map("church_code")
+  lastSequence Int    @default(0) @map("last_sequence")
+  church       Church @relation(fields: [churchCode], references: [code])
+
+  @@map("church_counters")
+}
+
+model SequenceCounter {
+  name         String @id
+  lastSequence Int    @map("last_sequence")
+
+  @@map("sequence_counters")
+}
+
+enum Sex {
+  MALE
+  FEMALE
+}
+
+enum AgeCategory {
+  KIDS
+  YOUTH
+  YOUNG_ADULTS
+  ADULTS
+  SENIOR
+}
+
+enum SandoSize {
+  XXS
+  XS
+  S
+  M
+  L
+  XL
+  XXL
+  XXXL
+  NOT_APPLICABLE
+}
+
+enum PaymentPackage {
+  DISCOUNTED
+  PREMIUM
+  REGULAR
+}
+
+enum PaymentStatus {
+  PENDING
+  VALID
+  DENIED
+}
+
+enum PaymentMode {
+  FULL
+  PAY_LATER @map("HALF")
+  CASH
+}
+
+model Registration {
+  id              String          @id @default(cuid())
+  ticketId        String          @unique @map("ticket_id")
+  churchCode      String          @map("church_code")
+  church          Church          @relation(fields: [churchCode], references: [code])
+  otherChurchName String?         @map("other_church_name")
+  sequence        Int
+  fullName        String          @map("full_name")
+  fullNameKey     String?         @unique @map("full_name_key")
+  age             Int
+  sex             Sex
+  phone           String
+  facebook        String
+  ageCategory     AgeCategory     @map("age_category")
+  sandoSize       SandoSize       @map("sando_size")
+  paymentPackage  PaymentPackage  @map("payment_package")
+  amount          Int
+  amountPaid      Int             @default(0) @map("amount_paid")
+  paymentMode     PaymentMode     @default(FULL) @map("payment_mode")
+  paymentProofKey String?         @map("payment_proof_key")
+  paymentStatus   PaymentStatus   @default(PENDING) @map("payment_status")
+  paymentReviewedAt DateTime?     @map("payment_reviewed_at")
+  balanceProofKey String?         @map("balance_proof_key")
+  balancePaymentStatus PaymentStatus? @map("balance_payment_status")
+  balancePaidAt   DateTime?       @map("balance_paid_at")
+  attendedAt      DateTime?       @map("attended_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  @@unique([sequence])
+  @@index([createdAt])
+  @@index([fullName])
+  @@index([phone])
+  @@index([ticketId])
+  @@index([paymentStatus])
+  @@map("registrations")
+}
+
+model Admin {
+  id           String @id @default(cuid())
+  email        String @unique
+  passwordHash String @map("password_hash")
+
+  @@map("admins")
+}
+
+model EventSettings {
+  id                   String    @id @default("default")
+  discountedEndsAt     DateTime? @map("discounted_ends_at")
+  registrationEndsAt   DateTime? @map("registration_ends_at")
+  discountedEnabled    Boolean   @default(true) @map("discounted_enabled")
+  registrationEnabled  Boolean   @default(true) @map("registration_enabled")
+  premiumEndsAt        DateTime? @map("premium_ends_at")
+  premiumEnabled       Boolean   @default(true) @map("premium_enabled")
+  regularEndsAt        DateTime? @map("regular_ends_at")
+  regularEnabled       Boolean   @default(true) @map("regular_enabled")
+  payLaterEndsAt       DateTime? @map("pay_later_ends_at")
+  payLaterEnabled      Boolean   @default(true) @map("pay_later_enabled")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  @@map("event_settings")
+}
